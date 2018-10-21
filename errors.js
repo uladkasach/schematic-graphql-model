@@ -15,8 +15,20 @@ class UnknownTypeError extends Error {
     this.type = type;
   }
 }
+class UnknownKindError extends Error {
+  constructor(type, field) {
+    const message = `Unknown field[(.type)+].kind: ${type.kind}. SchematicModel is not aware of this GQL type.kind definition.`;
+    super(message);
+
+    this.kind = type.kind;
+    this.type = type;
+    this.field = field;
+  }
+}
+
 
 export {
   NonExistantTypeDefinitionError,
   UnknownTypeError,
+  UnknownKindError,
 };

@@ -1,5 +1,6 @@
 /* eslint no-new: "off" */
 import { gql } from 'apollo-server-lambda';
+import SchematicModel from './index';
 
 
 describe('SchematicModel', () => {
@@ -13,61 +14,45 @@ describe('SchematicModel', () => {
     }
   `;
 
-
-  describe('schema parsing', () => {
-    it('should throw an error if ObjectTypeDefinition is not found for this class.name in schema', () => {
-      class Dummy404 extends SchematicModel {}
-      Dummy404.schema = schema;
-      try {
-        new Dummy404();
-        throw new Error('should not reach here');
-      } catch (error) {
-        expect(error.constructor.name).toEqual('NonExistantTypeDefinitionError');
-      }
-    });
-    it('should throw an error if ObjectTypeDefinition has an unknown type in the schema', () => {
-      const changedSchema = JSON.parse(JSON.stringify(schema));
-      const relevantDef = changedSchema.definitions.find(def => def.kind === 'ObjectTypeDefinition' && def.name.value === 'Dummy');
-      relevantDef.fields[1].type.name.value = 'Bob';
+  describe('retreiveParsedSchema', () => {
+    it('should be able to retreive parsed schema', () => {
       class Dummy extends SchematicModel {}
-      Dummy.schema = changedSchema;
+      Dummy.schema = schema;
+      const parsedSchema = Dummy.retreiveParsedSchema();
+      expect(parsedSchema).toMatchObject({
+        id: { required: true, type: 'String', list: false },
+        name: { required: false, type: 'String', list: false },
+        age: { required: false, type: 'Int', list: false },
+        height: { required: true, type: 'Float', list: false },
+        female: { required: false, type: 'Boolean', list: false },
+      });
+    });
+    it('should append parsed schema to constructor after first time', () => { // this way we dont parse schema every time, we just cache the schema parsing results
+      class Dummy extends SchematicModel {}
+      Dummy.schema = schema;
+      expect(typeof Dummy.parsedSchema).toEqual('undefined');
+      Dummy.retreiveParsedSchema();
+      expect(Dummy.parsedSchema).toMatchObject({
+        id: { required: true, type: 'String', list: false },
+        name: { required: false, type: 'String', list: false },
+        age: { required: false, type: 'Int', list: false },
+        height: { required: true, type: 'Float', list: false },
+        female: { required: false, type: 'Boolean', list: false },
+      });
+    });
+    it.skip('should throw error if required schema dependencies are not passed', () => { });
+  });
+  describe('initialization', () => {
+    it('should throw an error if a parameter is not valid for schema', () => {
+      class Dummy extends SchematicModel {}
+      Dummy.schema = schema;
       try {
         new Dummy();
         throw new Error('should not reach here');
       } catch (error) {
-        expect(error.constructor.name).toEqual('TypeError');
+        console.log(error);
       }
     });
-    it('should be able to interpret a graphql schema', () => {
-      /*
-      [ { name: 'id',
-             type: 'String',
-             required: true,
-             validation: [Function: validation] },
-           { name: 'name',
-             type: 'String',
-             required: false,
-             validation: [Function: validation] },
-           { name: 'age',
-             type: 'Int',
-             required: false,
-             validation: [Function: validation] },
-           { name: 'height',
-             type: 'Float',
-             required: true,
-             validation: [Function: validation] },
-           { name: 'female',
-             type: 'Boolean',
-             required: false,
-             validation: [Function: validation] } ]
-
-      */
-      class Dummy extends SchematicModel {}
-      Dummy.schema = schema;
-      const result = new Dummy();
-      expect(result.parsedSchema).toMatchObject({
-        id: { required: true, type: 'String', validation: types.String.validation },
-      });
-    });
+    it.skip('should build for a model with valid props passed', () => {});
   });
 });
