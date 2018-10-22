@@ -25,10 +25,21 @@ class UnknownKindError extends Error {
     this.field = field;
   }
 }
+class ValidityError extends Error {
+  constructor(errors, props, model) {
+    const message = `Errors on ${Object.keys(errors).length} properties were found while validating properties for model ${model}.`;
+    super(message);
+
+    this.errors = errors;
+    this.props = props;
+    this.modelName = model;
+  }
+}
 
 
 export {
   NonExistantTypeDefinitionError,
   UnknownTypeError,
   UnknownKindError,
+  ValidityError,
 };

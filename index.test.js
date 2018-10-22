@@ -5,6 +5,11 @@ import SchematicModel from './index';
 
 describe('SchematicModel', () => {
   const schema = gql`
+    type CarOfDummies {
+      dummies: [Dummy]
+      driver: Dummy!
+    }
+
     type Dummy {
       id: String!
       name: String
@@ -40,7 +45,27 @@ describe('SchematicModel', () => {
         female: { required: false, type: 'Boolean', list: false },
       });
     });
-    it.skip('should throw error if required schema dependencies are not passed', () => { });
+    it('should throw error if required schema dependencies are not passed', () => {
+      class CarOfDummies extends SchematicModel {}
+      CarOfDummies.schema = schema;
+      try {
+        CarOfDummies.retreiveParsedSchema();
+        throw new Error('should not reach here');
+      } catch (error) {
+        expect(error.constructor.name).toEqual('UnknownTypeError');
+      }
+    });
+    it('should append successfuly if all schema dependencies are defined', () => {
+      class Dummy extends SchematicModel {}
+      class CarOfDummies extends SchematicModel {}
+      CarOfDummies.dependencies = [Dummy];
+      CarOfDummies.schema = schema;
+      const parsedSchema = CarOfDummies.retreiveParsedSchema();
+      expect(parsedSchema).toMatchObject({
+        driver: { required: true, type: 'Dummy', custom: true, list: false },
+        dummies: { required: false, type: 'Dummy', custom: true, list: true },
+      });
+    });
   });
   describe('initialization', () => {
     it('should throw an error if a parameter is not valid for schema', () => {
@@ -50,9 +75,36 @@ describe('SchematicModel', () => {
         new Dummy();
         throw new Error('should not reach here');
       } catch (error) {
-        console.log(error);
+        expect(error.constructor.name).toEqual('ValidityError');
       }
     });
-    it.skip('should build for a model with valid props passed', () => {});
+    it('should build for a model with valid props passed', () => {
+      class Dummy extends SchematicModel {}
+      Dummy.schema = schema;
+      new Dummy({
+        id: '8-21-12',
+        name: 'bo-hinkle',
+        age: 22,
+        height: 62,
+      });
+    });
+    it('should attach all schema props to self', () => {
+      class Dummy extends SchematicModel {}
+      Dummy.schema = schema;
+      const dummy = new Dummy({
+        id: '8-21-12',
+        name: 'bo-hinkle',
+        age: 22,
+        height: 62,
+        female: false,
+      });
+      expect(dummy).toMatchObject({
+        id: '8-21-12',
+        name: 'bo-hinkle',
+        age: 22,
+        height: 62,
+        female: false,
+      });
+    });
   });
 });
