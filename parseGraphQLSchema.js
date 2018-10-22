@@ -35,6 +35,9 @@ const parseGraphQLSchema = ({ schema, modelName, customTypes = {} }) => {
     }
     const custom = (type in customTypes); // used to define where to get type validation method
 
+    // if custom, determine whether or not it was an interface object
+    const isInterface = customTypes[type].isASchemaInterface;
+
     // return the results
     return {
       name,
@@ -42,6 +45,7 @@ const parseGraphQLSchema = ({ schema, modelName, customTypes = {} }) => {
       type,
       required,
       custom,
+      interface: isInterface,
     };
   });
 

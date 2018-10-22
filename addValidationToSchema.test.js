@@ -93,6 +93,10 @@ describe('addValidationToSchema', () => {
       expect(validation(true)).toEqual(false);
       expect(validation(false)).toEqual(false);
     });
+    describe('should define accurate validation for an interface type', () => {
+      // i.e., the custom type model should have Model.Interfaces and we should choose which interface based on model knowledge
+      // e.g., InterfaceModel.findImplementaionFor(...);
+    });
   });
   describe('default', () => {
     const testSchema = {

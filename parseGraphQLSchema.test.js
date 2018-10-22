@@ -23,6 +23,10 @@ describe('SchematicModel', () => {
       luckyNumbers: [Int]!
     }
 
+    type CarOfPeople {
+      driver: Person
+    }
+
     type Dummy {
       id: String!
       name: String
@@ -70,7 +74,7 @@ describe('SchematicModel', () => {
     });
     describe('custom types', () => {
       it('should be able to interpret a graphql schema with regular custom types', () => {
-        const result = parseGraphQLSchema({ schema, modelName: 'CarOfDummies', customTypes: { Dummy: true } });
+        const result = parseGraphQLSchema({ schema, modelName: 'CarOfDummies', customTypes: { Dummy: { isASchemaInterface: false } } });
         expect(result).toMatchObject({
           driver: { required: true, type: 'Dummy', custom: true, list: false },
           dummies: { required: false, type: 'Dummy', custom: true, list: true },
@@ -85,7 +89,7 @@ describe('SchematicModel', () => {
           });
         });
         it('should be able to interpret a schema that implements an interface type', () => {
-          const result = parseGraphQLSchema({ schema, modelName: 'ExtensiveDummy', customTypes: { Person: true } });
+          const result = parseGraphQLSchema({ schema, modelName: 'ExtensiveDummy' });
           expect(result).toMatchObject({
             id: { required: true, type: 'String', list: false },
             name: { required: false, type: 'String', list: false },
@@ -94,6 +98,12 @@ describe('SchematicModel', () => {
             female: { required: false, type: 'Boolean', list: false },
             favoriteNumbers: { required: false, type: 'Int', list: true },
             luckyNumbers: { required: true, type: 'Int', list: true },
+          });
+        });
+        it.only('should be able to define when a field is composed of an interface', () => { // used to evaluate which implementation of interface to validate
+          const result = parseGraphQLSchema({ schema, modelName: 'CarOfPeople', customTypes: { Person: { isASchemaInterface: true } } });
+          expect(result).toMatchObject({
+            driver: { required: false, type: 'Person', custom: true, interface: true, list: false },
           });
         });
       });
