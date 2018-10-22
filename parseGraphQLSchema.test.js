@@ -8,6 +8,21 @@ describe('SchematicModel', () => {
       driver: Dummy!
     }
 
+    interface Person {
+      name: String
+      age: Int
+    }
+
+    type ExtensiveDummy implements Person {
+      id: String!
+      name: String
+      age: Int
+      height: Float!
+      female: Boolean
+      favoriteNumbers: [Int]
+      luckyNumbers: [Int]!
+    }
+
     type Dummy {
       id: String!
       name: String
@@ -52,11 +67,34 @@ describe('SchematicModel', () => {
           luckyNumbers: { required: true, type: 'Int', list: true },
         });
       });
-      it('should be able to interpret a graphql schema with custom types', () => {
+    });
+    describe('custom types', () => {
+      it('should be able to interpret a graphql schema with regular custom types', () => {
         const result = parseGraphQLSchema({ schema, modelName: 'CarOfDummies', customTypes: { Dummy: true } });
         expect(result).toMatchObject({
           driver: { required: true, type: 'Dummy', custom: true, list: false },
           dummies: { required: false, type: 'Dummy', custom: true, list: true },
+        });
+      });
+      describe('interface', () => {
+        it('should be able to interpret a graphql schema with interface types', () => {
+          const result = parseGraphQLSchema({ schema, modelName: 'Person' });
+          expect(result).toMatchObject({
+            name: { required: false, type: 'String', list: false },
+            age: { required: false, type: 'Int', list: false },
+          });
+        });
+        it('should be able to interpret a schema that implements an interface type', () => {
+          const result = parseGraphQLSchema({ schema, modelName: 'ExtensiveDummy', customTypes: { Person: true } });
+          expect(result).toMatchObject({
+            id: { required: true, type: 'String', list: false },
+            name: { required: false, type: 'String', list: false },
+            age: { required: false, type: 'Int', list: false },
+            height: { required: true, type: 'Float', list: false },
+            female: { required: false, type: 'Boolean', list: false },
+            favoriteNumbers: { required: false, type: 'Int', list: true },
+            luckyNumbers: { required: true, type: 'Int', list: true },
+          });
         });
       });
     });

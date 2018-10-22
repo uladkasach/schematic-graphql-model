@@ -1,9 +1,10 @@
 import { NonExistantTypeDefinitionError, UnknownTypeError, UnknownKindError } from './errors';
 import types from './types';
 
+const validDefTypes = ['ObjectTypeDefinition', 'InterfaceTypeDefinition'];
 const parseGraphQLSchema = ({ schema, modelName, customTypes = {} }) => {
   // 1. find the GQL definition for the query of interest
-  const definition = schema.definitions.find(def => def.kind === 'ObjectTypeDefinition' && def.name.value === modelName);
+  const definition = schema.definitions.find(def => validDefTypes.includes(def.kind) && def.name.value === modelName);
   if (typeof definition === 'undefined') throw new NonExistantTypeDefinitionError(modelName, schema);
 
   // 2. extract and parse each field
