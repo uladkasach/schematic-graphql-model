@@ -13,11 +13,11 @@ export const determineValidationForField = (field, customTypes) => {
     const TargetDependency = customTypes[field.type];
     typeValidation = (props) => {
       const TargetImplementation = TargetDependency.findImplementationFor(props); // find the target impelementation for these props (e.g., by type key); user must define this method
-      return TargetImplementation.validate(props); // validate the props based on the target implementation
+      return TargetImplementation.validate(props, true); // validate the props based on the target implementation
     };
   } else if (field.custom) { // if its a custom field, we must check the .validate static method of the dependent SchematicModel
     const TargetDependency = customTypes[field.type];
-    typeValidation = props => TargetDependency.validate(props);
+    typeValidation = props => TargetDependency.validate(props, true);
   } else { // if its not a custom field, then we just use the .validation method of the known GQL type
     typeValidation = types[field.type].validation;
   }
@@ -40,8 +40,11 @@ export const determineValidationForField = (field, customTypes) => {
       // determine validity based on type of result
       const values = (Array.isArray(value)) ? value : [value]; // cast nonList types to list, for a standard way of validating values
       values.forEach((val) => {
-        const validForType = typeValidation(val);
-        if (!validForType) errors.push([val, field]);
+        const errorsForType = typeValidation(val, true);
+        const errorsExist = (Array.isArray(errorsForType)) // schematicModels give objects of errors (key per prop); basic types give an array of errors
+          ? errorsForType.length !== 0
+          : Object.keys(errorsForType).length !== 0;
+        if (errorsExist) errors.push({ value: val, errors: errorsForType });
       });
     }
 

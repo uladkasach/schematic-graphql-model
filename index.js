@@ -3,14 +3,16 @@ import addValidationToSchema from './addValidationToSchema';
 import { ValidityError, MissingMethodError } from './errors';
 
 // used to wrap props as schematic models, when there is a target model
-const castToSchematicModel = (value, TargetModel) => {
-  if (TargetModel) {
-    return (Array.isArray(value)) // if value is an array,
-      ? value.map(val => new TargetModel(val)) //  parse each object of array
-      : new TargetModel(value); // else just parse the object
-  }
-  return value;
+
+const castValueToSchematicModel = (props, TargetModel) => {
+  const ImplementationTargetModel = (TargetModel.retreiveParsedSchema().self.interface) // handle casting to implementations
+    ? TargetModel.findImplementationFor(props) // if target is an interface, let it pick the implementation
+    : TargetModel; // if target is not an interface, then there are no implementations to wory about
+  return new ImplementationTargetModel(props);
 };
+const castValuesToSchematicModels = (value, TargetModel) => ((Array.isArray(value)) // if value is an array,
+  ? value.map(val => castValueToSchematicModel(val, TargetModel)) //  parse each object of array
+  : castValueToSchematicModel(value, TargetModel)); // else just parse the object
 
 /**
   @class SchematicModel
@@ -35,7 +37,7 @@ export default class SchematicModel {
       const fieldSchema = fields[key];
       const value = props[key];
       const TargetModel = (fieldSchema.custom) ? dependencies[fieldSchema.type] : null;
-      const parsedValue = castToSchematicModel(value, TargetModel);
+      const parsedValue = (TargetModel) ? castValuesToSchematicModels(value, TargetModel) : value;
       this[key] = parsedValue;
     });
   }

@@ -15,6 +15,10 @@ describe('SchematicModel', () => {
       age: Int
     }
 
+    type CarOfPeople {
+      driver: Person
+    }
+
     type ExtensiveDummy implements Person {
       id: String!
       name: String
@@ -171,6 +175,31 @@ describe('SchematicModel', () => {
           expect(error.constructor.name).toEqual('ValidityError');
         }
       });
+      it('should throw accurate and helpful errors', () => {
+        // currently they are nonsensical. e.g., CarOfDummies with invalid dummy only says that the name is wrong, but not the rest.
+        // e.g., it also says it was checking {name} against driverField for driver, but it should have been checking name against nameField for driver
+        const driverDeets = {
+          name: 'bob',
+        };
+        let expectedDriverErrors;
+        try {
+          new Dummy(driverDeets);
+          throw new Error('should not reach here');
+        } catch (error) {
+          expect(error.constructor.name).toEqual('ValidityError');
+          expectedDriverErrors = error.errors;
+        }
+        try {
+          new CarOfDummies({
+            driver: driverDeets,
+            dummies: [],
+          });
+          throw new Error('should not reach here');
+        } catch (error) {
+          expect(error.constructor.name).toEqual('ValidityError');
+          expect(error.errors.driver[0].errors).toEqual(expectedDriverErrors);
+        }
+      });
       it('initialize if all dependency props are valid', () => {
         new CarOfDummies({
           driver: {
@@ -191,6 +220,42 @@ describe('SchematicModel', () => {
           dummies: [],
         });
         expect(car.driver.constructor.name).toEqual('Dummy');
+      });
+    });
+    describe('interface type dependencies', () => {
+      class ExtensiveDummy extends SchematicModel {}
+      ExtensiveDummy.schema = schema;
+      class Person extends SchematicModel {
+        static findImplementationFor() {
+          return ExtensiveDummy;
+        }
+      }
+      Person.schema = schema;
+      class CarOfPeople extends SchematicModel {}
+      CarOfPeople.dependencies = [Person];
+      CarOfPeople.schema = schema;
+      it('initialize if all dependency props are valid', () => {
+        new CarOfPeople({
+          driver: {
+            id: '12',
+            name: 'fred',
+            height: 10,
+            luckyNumbers: [21, 7, 3],
+          },
+        });
+      });
+      it('should find that each custom dependency has been replaced with the actual SchematicModel', () => {
+        const car = new CarOfPeople({
+          driver: {
+            id: '12',
+            name: 'fred',
+            height: 10,
+            luckyNumbers: [21, 7, 3],
+          },
+          dummies: [],
+        });
+        expect(car.driver.constructor.name).toEqual('ExtensiveDummy');
+        expect(car.driver.luckyNumbers).toEqual([21, 7, 3]); // also check that implementation specific props had persisted
       });
     });
   });

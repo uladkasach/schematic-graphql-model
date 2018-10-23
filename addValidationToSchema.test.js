@@ -81,7 +81,7 @@ describe('addValidationToSchema', () => {
         type: 'AwesomeType',
       }, {
         AwesomeType: {
-          validate: value => value === 'awesome',
+          validate: value => ((value === 'awesome') ? [] : ['not awesome']), // array of errros
         },
       });
       expect(validation('awesome')).toEqual(true);
@@ -105,7 +105,7 @@ describe('addValidationToSchema', () => {
           AwesomeType: {
             validate: value => value === 'awesome',
             findImplementationFor: () => ({
-              validate: value => value === 'super awesome',
+              validate: value => ((value === 'super awesome') ? [] : ['not awesome']), // array of errros
             }),
           },
         });
@@ -150,12 +150,6 @@ describe('addValidationToSchema', () => {
       Object.values(schemaWithValidation).forEach((field) => {
         expect(typeof field.validation).toEqual('function');
       });
-    });
-  });
-  describe('errors', () => {
-    it.skip('should provide useful errors for nested data types', () => {
-      // currently they are nonsensical. e.g., CarOfDummies with invalid dummy only says that the name is wrong, but not the rest.
-      // e.g., it also says it was checking {name} against driverField for driver, but it should have been checking name against nameField for driver
     });
   });
 });
