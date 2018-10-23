@@ -6,6 +6,7 @@ const parseGraphQLSchema = ({ schema, modelName, customTypes = {} }) => {
   // 1. find the GQL definition for the query of interest
   const definition = schema.definitions.find(def => validDefTypes.includes(def.kind) && def.name.value === modelName);
   if (typeof definition === 'undefined') throw new NonExistantTypeDefinitionError(modelName, schema);
+  const modelIsAnInterface = definition.kind === 'InterfaceTypeDefinition';
 
   // 2. extract and parse each field
   const fields = definition.fields.map((field) => {
@@ -36,7 +37,7 @@ const parseGraphQLSchema = ({ schema, modelName, customTypes = {} }) => {
     const custom = (type in customTypes); // used to define where to get type validation method
 
     // if custom, determine whether or not it was an interface object
-    const isInterface = customTypes[type].isASchemaInterface;
+    const isInterface = (custom) ? customTypes[type].retreiveParsedSchema().self.interface : false;
 
     // return the results
     return {
@@ -56,7 +57,7 @@ const parseGraphQLSchema = ({ schema, modelName, customTypes = {} }) => {
   });
 
   // return the schema
-  return parsedSchema;
+  return { fields: parsedSchema, self: { interface: modelIsAnInterface } };
 };
 
 

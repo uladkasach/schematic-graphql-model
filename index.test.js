@@ -10,6 +10,21 @@ describe('SchematicModel', () => {
       driver: Dummy!
     }
 
+    interface Person {
+      name: String
+      age: Int
+    }
+
+    type ExtensiveDummy implements Person {
+      id: String!
+      name: String
+      age: Int
+      height: Float!
+      female: Boolean
+      favoriteNumbers: [Int]
+      luckyNumbers: [Int]!
+    }
+
     type Dummy {
       id: String!
       name: String
@@ -23,8 +38,8 @@ describe('SchematicModel', () => {
     it('should be able to retreive parsed schema', () => {
       class Dummy extends SchematicModel {}
       Dummy.schema = schema;
-      const parsedSchema = Dummy.retreiveParsedSchema();
-      expect(parsedSchema).toMatchObject({
+      const { fields } = Dummy.retreiveParsedSchema();
+      expect(fields).toMatchObject({
         id: { required: true, type: 'String', list: false },
         name: { required: false, type: 'String', list: false },
         age: { required: false, type: 'Int', list: false },
@@ -37,7 +52,7 @@ describe('SchematicModel', () => {
       Dummy.schema = schema;
       expect(typeof Dummy.parsedSchema).toEqual('undefined');
       Dummy.retreiveParsedSchema();
-      expect(Dummy.parsedSchema).toMatchObject({
+      expect(Dummy.parsedSchema.fields).toMatchObject({
         id: { required: true, type: 'String', list: false },
         name: { required: false, type: 'String', list: false },
         age: { required: false, type: 'Int', list: false },
@@ -57,14 +72,26 @@ describe('SchematicModel', () => {
     });
     it('should append successfuly if all schema dependencies are defined', () => {
       class Dummy extends SchematicModel {}
+      Dummy.schema = schema;
       class CarOfDummies extends SchematicModel {}
       CarOfDummies.dependencies = [Dummy];
       CarOfDummies.schema = schema;
-      const parsedSchema = CarOfDummies.retreiveParsedSchema();
-      expect(parsedSchema).toMatchObject({
+      const { fields } = CarOfDummies.retreiveParsedSchema();
+      expect(fields).toMatchObject({
         driver: { required: true, type: 'Dummy', custom: true, list: false },
         dummies: { required: false, type: 'Dummy', custom: true, list: true },
       });
+    });
+    it('should throw an error if the model is an interface type and it does not define .findImplementationFor method', () => {
+      // note, this is done in retreiveParsedSchema because only after schema retreival do we have the info needed to check
+      class Person extends SchematicModel {}
+      Person.schema = schema;
+      try {
+        Person.retreiveParsedSchema();
+        throw new Error('should not reach here');
+      } catch (error) {
+        expect(error.constructor.name).toEqual('MissingMethodError');
+      }
     });
   });
   describe('initialization', () => {

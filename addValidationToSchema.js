@@ -5,10 +5,17 @@ import types from './types';
 export const determineValidationForField = (field, customTypes) => {
   /**
     determine typeValidation
-    - only considers field.custom
+    - considers field.custom (if custom, we need to use the validation of the customType model)
+    - considers field.interface (if interface, we need to see which implementation of it to use)
   */
   let typeValidation;
-  if (field.custom) { // if its a custom field, we must check the .validate static method of the dependent SchematicModel
+  if (field.interface) { // if it is an implementation field, we must ask the customType to see which implementation model is the TargetDependency
+    const TargetDependency = customTypes[field.type];
+    typeValidation = (props) => {
+      const TargetImplementation = TargetDependency.findImplementationFor(props); // find the target impelementation for these props (e.g., by type key); user must define this method
+      return TargetImplementation.validate(props); // validate the props based on the target implementation
+    };
+  } else if (field.custom) { // if its a custom field, we must check the .validate static method of the dependent SchematicModel
     const TargetDependency = customTypes[field.type];
     typeValidation = props => TargetDependency.validate(props);
   } else { // if its not a custom field, then we just use the .validation method of the known GQL type

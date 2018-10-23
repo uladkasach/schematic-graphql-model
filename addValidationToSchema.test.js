@@ -96,6 +96,29 @@ describe('addValidationToSchema', () => {
     describe('should define accurate validation for an interface type', () => {
       // i.e., the custom type model should have Model.Interfaces and we should choose which interface based on model knowledge
       // e.g., InterfaceModel.findImplementaionFor(...);
+      it('should use the validation of the implementation model requested', () => {
+        const validation = determineValidationForField({
+          custom: true,
+          type: 'AwesomeType',
+          interface: true,
+        }, {
+          AwesomeType: {
+            validate: value => value === 'awesome',
+            findImplementationFor: () => ({
+              validate: value => value === 'super awesome',
+            }),
+          },
+        });
+        expect(validation('super awesome')).toEqual(true);
+        expect(validation('awesome')).toEqual(false);
+        expect(validation('Test')).toEqual(false);
+        expect(validation(12)).toEqual(false);
+        expect(validation(12.5)).toEqual(false);
+        expect(validation(1)).toEqual(false);
+        expect(validation(0)).toEqual(false);
+        expect(validation(true)).toEqual(false);
+        expect(validation(false)).toEqual(false);
+      });
     });
   });
   describe('default', () => {

@@ -1,6 +1,6 @@
 import parseGraphQLSchema from './parseGraphQLSchema';
 import addValidationToSchema from './addValidationToSchema';
-import { ValidityError } from './errors';
+import { ValidityError, MissingMethodError } from './errors';
 
 /**
   @class SchematicModel
@@ -19,8 +19,8 @@ export default class SchematicModel {
     if (Object.keys(errors).length !== 0) throw new ValidityError(errors, props, this.constructor.name);
 
     // assign model props to self
-    const parsedSchema = this.constructor.retreiveParsedSchema();
-    const fieldKeys = Object.keys(parsedSchema);
+    const { fields } = this.constructor.retreiveParsedSchema();
+    const fieldKeys = Object.keys(fields);
     fieldKeys.forEach((key) => {
       this[key] = props[key];
     });
@@ -31,13 +31,13 @@ export default class SchematicModel {
   */
   static validate(props, verbose) {
     // retreive schema and keys to validate
-    const parsedSchema = this.retreiveParsedSchema();
-    const fieldKeys = Object.keys(parsedSchema);
+    const { fields } = this.retreiveParsedSchema();
+    const fieldKeys = Object.keys(fields);
 
     // conduct validation on each key, keep the array of errors found
     const errors = {};
     fieldKeys.forEach((key) => {
-      const fieldSchema = parsedSchema[key];
+      const fieldSchema = fields[key];
       const value = props[key];
       const validityErrors = fieldSchema.validation(value, true);
       if (validityErrors.length > 0) errors[key] = validityErrors; // if errors are found, record them
@@ -57,13 +57,19 @@ export default class SchematicModel {
       // 1. retreive the parsed schema
       const customTypes = {}; // object to build into
       if (dependencies) dependencies.forEach((dep) => { customTypes[dep.name] = dep; }); // take each dependency and put it in customTypes obj for lookups
-      const parsedSchema = parseGraphQLSchema({ schema, modelName: name, customTypes });
+      const { fields, self } = parseGraphQLSchema({ schema, modelName: name, customTypes });
+
+      // 1.2 this model is an interface, check to make sure that the method .findImplementaionFor has been defined on the class
+      if (self.interface && typeof this.findImplementaionFor !== 'function') throw new MissingMethodError('findImplementaionFor', 'is an interface type');
 
       // 2. attach validation methods to each field
-      const parsedSchemaWithValidation = addValidationToSchema({ schema: parsedSchema, customTypes });
+      const fieldsWithValidation = addValidationToSchema({ schema: fields, customTypes });
 
       // 3. append parsedSchema to the class, to cache these computations
-      this.parsedSchema = parsedSchemaWithValidation;
+      this.parsedSchema = {
+        fields: fieldsWithValidation,
+        self,
+      };
     }
     return this.parsedSchema;
   }

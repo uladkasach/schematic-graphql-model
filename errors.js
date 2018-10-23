@@ -35,6 +35,13 @@ class ValidityError extends Error {
     this.modelName = model;
   }
 }
+class MissingMethodError extends Error {
+  constructor(method, reason) {
+    const message = `Missing method: ${method}. Method is required on this SchematicModel: ${reason}.`;
+    super(message);
+    this.method = method;
+  }
+}
 
 
 export {
@@ -42,4 +49,5 @@ export {
   UnknownTypeError,
   UnknownKindError,
   ValidityError,
+  MissingMethodError,
 };

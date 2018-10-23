@@ -60,8 +60,9 @@ describe('SchematicModel', () => {
         }
       });
       it('should be able to interpret a graphql schema', () => {
-        const result = parseGraphQLSchema({ schema, modelName: 'Dummy' });
-        expect(result).toMatchObject({
+        const { fields, self } = parseGraphQLSchema({ schema, modelName: 'Dummy' });
+        expect(self.interface).toEqual(false);
+        expect(fields).toMatchObject({
           id: { required: true, type: 'String', list: false },
           name: { required: false, type: 'String', list: false },
           age: { required: false, type: 'Int', list: false },
@@ -74,23 +75,26 @@ describe('SchematicModel', () => {
     });
     describe('custom types', () => {
       it('should be able to interpret a graphql schema with regular custom types', () => {
-        const result = parseGraphQLSchema({ schema, modelName: 'CarOfDummies', customTypes: { Dummy: { isASchemaInterface: false } } });
-        expect(result).toMatchObject({
+        const parsedDummyModelMock = { retreiveParsedSchema: () => ({ self: { interface: false } }) };
+        const { fields, self } = parseGraphQLSchema({ schema, modelName: 'CarOfDummies', customTypes: { Dummy: parsedDummyModelMock } });
+        expect(self.interface).toEqual(false);
+        expect(fields).toMatchObject({
           driver: { required: true, type: 'Dummy', custom: true, list: false },
           dummies: { required: false, type: 'Dummy', custom: true, list: true },
         });
       });
       describe('interface', () => {
         it('should be able to interpret a graphql schema with interface types', () => {
-          const result = parseGraphQLSchema({ schema, modelName: 'Person' });
-          expect(result).toMatchObject({
+          const { fields, self } = parseGraphQLSchema({ schema, modelName: 'Person' });
+          expect(self.interface).toEqual(true);
+          expect(fields).toMatchObject({
             name: { required: false, type: 'String', list: false },
             age: { required: false, type: 'Int', list: false },
           });
         });
         it('should be able to interpret a schema that implements an interface type', () => {
-          const result = parseGraphQLSchema({ schema, modelName: 'ExtensiveDummy' });
-          expect(result).toMatchObject({
+          const { fields } = parseGraphQLSchema({ schema, modelName: 'ExtensiveDummy' });
+          expect(fields).toMatchObject({
             id: { required: true, type: 'String', list: false },
             name: { required: false, type: 'String', list: false },
             age: { required: false, type: 'Int', list: false },
@@ -100,9 +104,10 @@ describe('SchematicModel', () => {
             luckyNumbers: { required: true, type: 'Int', list: true },
           });
         });
-        it.only('should be able to define when a field is composed of an interface', () => { // used to evaluate which implementation of interface to validate
-          const result = parseGraphQLSchema({ schema, modelName: 'CarOfPeople', customTypes: { Person: { isASchemaInterface: true } } });
-          expect(result).toMatchObject({
+        it('should be able to define when a field is composed of an interface', () => { // used to evaluate which implementation of interface to validate
+          const parsedPersonModelMock = { retreiveParsedSchema: () => ({ self: { interface: true } }) };
+          const { fields } = parseGraphQLSchema({ schema, modelName: 'CarOfPeople', customTypes: { Person: parsedPersonModelMock } });
+          expect(fields).toMatchObject({
             driver: { required: false, type: 'Person', custom: true, interface: true, list: false },
           });
         });
