@@ -82,55 +82,115 @@ describe('SchematicModel', () => {
         dummies: { required: false, type: 'Dummy', custom: true, list: true },
       });
     });
-    it('should throw an error if the model is an interface type and it does not define .findImplementationFor method', () => {
-      // note, this is done in retreiveParsedSchema because only after schema retreival do we have the info needed to check
-      class Person extends SchematicModel {}
-      Person.schema = schema;
-      try {
-        Person.retreiveParsedSchema();
-        throw new Error('should not reach here');
-      } catch (error) {
-        expect(error.constructor.name).toEqual('MissingMethodError');
-      }
+    describe('parsedSchema.self.interface', () => {
+      it('should throw an error if the model is an interface type and it does not define .findImplementationFor method', () => {
+        // note, this is done in retreiveParsedSchema because only after schema retreival do we have the info needed to check
+        class Person extends SchematicModel {}
+        Person.schema = schema;
+        try {
+          Person.retreiveParsedSchema();
+          throw new Error('should not reach here');
+        } catch (error) {
+          expect(error.constructor.name).toEqual('MissingMethodError');
+        }
+      });
+      it('should succeed if the model is an interface type and it does define .findImplementationFor method', () => {
+        // note, this is done in retreiveParsedSchema because only after schema retreival do we have the info needed to check
+        class Person extends SchematicModel {
+          static findImplementaionFor() {
+            return Person;
+          }
+        }
+        Person.schema = schema;
+        try {
+          Person.retreiveParsedSchema();
+          throw new Error('should not reach here');
+        } catch (error) {
+          expect(error.constructor.name).toEqual('MissingMethodError');
+        }
+      });
     });
   });
   describe('initialization', () => {
-    it('should throw an error if a parameter is not valid for schema', () => {
-      class Dummy extends SchematicModel {}
-      Dummy.schema = schema;
-      try {
-        new Dummy();
-        throw new Error('should not reach here');
-      } catch (error) {
-        expect(error.constructor.name).toEqual('ValidityError');
-      }
-    });
-    it('should build for a model with valid props passed', () => {
-      class Dummy extends SchematicModel {}
-      Dummy.schema = schema;
-      new Dummy({
-        id: '8-21-12',
-        name: 'bo-hinkle',
-        age: 22,
-        height: 62,
+    describe('basic type dependencies', () => {
+      it('should throw an error if a parameter is not valid for schema', () => {
+        class Dummy extends SchematicModel {}
+        Dummy.schema = schema;
+        try {
+          new Dummy();
+          throw new Error('should not reach here');
+        } catch (error) {
+          expect(error.constructor.name).toEqual('ValidityError');
+        }
+      });
+      it('should build for a model with valid props passed', () => {
+        class Dummy extends SchematicModel {}
+        Dummy.schema = schema;
+        new Dummy({
+          id: '8-21-12',
+          name: 'bo-hinkle',
+          age: 22,
+          height: 62,
+        });
+      });
+      it('should attach all schema props to self', () => {
+        class Dummy extends SchematicModel {}
+        Dummy.schema = schema;
+        const dummy = new Dummy({
+          id: '8-21-12',
+          name: 'bo-hinkle',
+          age: 22,
+          height: 62,
+          female: false,
+        });
+        expect(dummy).toMatchObject({
+          id: '8-21-12',
+          name: 'bo-hinkle',
+          age: 22,
+          height: 62,
+          female: false,
+        });
       });
     });
-    it('should attach all schema props to self', () => {
+    describe('custom type dependencies', () => {
       class Dummy extends SchematicModel {}
       Dummy.schema = schema;
-      const dummy = new Dummy({
-        id: '8-21-12',
-        name: 'bo-hinkle',
-        age: 22,
-        height: 62,
-        female: false,
+      class CarOfDummies extends SchematicModel {}
+      CarOfDummies.dependencies = [Dummy];
+      CarOfDummies.schema = schema;
+      it('should throw an error if dependencies props are invalid', () => {
+        try {
+          new CarOfDummies({
+            driver: {
+              name: 'bob',
+            },
+            dummies: [],
+          });
+          throw new Error('should not reach here');
+        } catch (error) {
+          expect(error.constructor.name).toEqual('ValidityError');
+        }
       });
-      expect(dummy).toMatchObject({
-        id: '8-21-12',
-        name: 'bo-hinkle',
-        age: 22,
-        height: 62,
-        female: false,
+      it('initialize if all dependency props are valid', () => {
+        new CarOfDummies({
+          driver: {
+            id: '12',
+            name: 'fred',
+            height: 10,
+          },
+          dummies: [],
+        });
+      });
+      it('should find that each custom dependency has been replaced with the actuall SchematicModel', () => {
+        const car = new CarOfDummies({
+          driver: {
+            id: '12',
+            name: 'fred',
+            height: 10,
+          },
+          dummies: [],
+        });
+        expect(car.driver.constructor.name).toEqual('Dummy');
       });
     });
   });

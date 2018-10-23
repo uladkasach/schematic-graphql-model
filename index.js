@@ -2,6 +2,16 @@ import parseGraphQLSchema from './parseGraphQLSchema';
 import addValidationToSchema from './addValidationToSchema';
 import { ValidityError, MissingMethodError } from './errors';
 
+// used to wrap props as schematic models, when there is a target model
+const castToSchematicModel = (value, TargetModel) => {
+  if (TargetModel) {
+    return (Array.isArray(value)) // if value is an array,
+      ? value.map(val => new TargetModel(val)) //  parse each object of array
+      : new TargetModel(value); // else just parse the object
+  }
+  return value;
+};
+
 /**
   @class SchematicModel
   - provides schema validation of objects built, based on graphql schema provided
@@ -19,10 +29,14 @@ export default class SchematicModel {
     if (Object.keys(errors).length !== 0) throw new ValidityError(errors, props, this.constructor.name);
 
     // assign model props to self
-    const { fields } = this.constructor.retreiveParsedSchema();
+    const { fields, dependencies } = this.constructor.retreiveParsedSchema();
     const fieldKeys = Object.keys(fields);
     fieldKeys.forEach((key) => {
-      this[key] = props[key];
+      const fieldSchema = fields[key];
+      const value = props[key];
+      const TargetModel = (fieldSchema.custom) ? dependencies[fieldSchema.type] : null;
+      const parsedValue = castToSchematicModel(value, TargetModel);
+      this[key] = parsedValue;
     });
   }
 
@@ -60,7 +74,7 @@ export default class SchematicModel {
       const { fields, self } = parseGraphQLSchema({ schema, modelName: name, customTypes });
 
       // 1.2 this model is an interface, check to make sure that the method .findImplementaionFor has been defined on the class
-      if (self.interface && typeof this.findImplementaionFor !== 'function') throw new MissingMethodError('findImplementaionFor', 'is an interface type');
+      if (self.interface && typeof this.findImplementationFor !== 'function') throw new MissingMethodError('findImplementationFor', 'is an interface type');
 
       // 2. attach validation methods to each field
       const fieldsWithValidation = addValidationToSchema({ schema: fields, customTypes });
@@ -69,6 +83,7 @@ export default class SchematicModel {
       this.parsedSchema = {
         fields: fieldsWithValidation,
         self,
+        dependencies: customTypes,
       };
     }
     return this.parsedSchema;

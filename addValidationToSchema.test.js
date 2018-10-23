@@ -152,4 +152,10 @@ describe('addValidationToSchema', () => {
       });
     });
   });
+  describe('errors', () => {
+    it.skip('should provide useful errors for nested data types', () => {
+      // currently they are nonsensical. e.g., CarOfDummies with invalid dummy only says that the name is wrong, but not the rest.
+      // e.g., it also says it was checking {name} against driverField for driver, but it should have been checking name against nameField for driver
+    });
+  });
 });
