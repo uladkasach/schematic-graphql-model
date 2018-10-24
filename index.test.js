@@ -90,31 +90,53 @@ describe('SchematicModel', () => {
       });
     });
     describe('parsedSchema.self.interface', () => {
-      it('should throw an error if the model is an interface type and it does not define .findImplementationFor method', () => {
-        // note, this is done in retreiveParsedSchema because only after schema retreival do we have the info needed to check
-        class Person extends SchematicModel {}
-        Person.schema = schema;
-        try {
-          Person.retreiveParsedSchema();
-          throw new Error('should not reach here');
-        } catch (error) {
-          expect(error.constructor.name).toEqual('MissingMethodError');
-        }
-      });
-      it('should succeed if the model is an interface type and it does define .findImplementationFor method', () => {
-        // note, this is done in retreiveParsedSchema because only after schema retreival do we have the info needed to check
-        class Person extends SchematicModel {
-          static findImplementaionFor() {
-            return Person;
+      describe('resolve type required', () => {
+        it('should throw an error if the model is an interface type and it does not define resolveType method', () => {
+          // note, this is done in retreiveParsedSchema because only after schema retreival do we have the info needed to check
+          class Person extends SchematicModel {}
+          Person.schema = schema;
+          try {
+            Person.retreiveParsedSchema();
+            throw new Error('should not reach here');
+          } catch (error) {
+            expect(error.constructor.name).toEqual('MissingMethodError');
           }
-        }
-        Person.schema = schema;
-        try {
+        });
+        it('should succeed if the model is an interface type and it does define resolveType method', () => {
+          class Person extends SchematicModel {
+            static resolveType() {
+              return 'Person';
+            }
+          }
+          Person.schema = schema;
           Person.retreiveParsedSchema();
-          throw new Error('should not reach here');
-        } catch (error) {
-          expect(error.constructor.name).toEqual('MissingMethodError');
-        }
+        });
+      });
+      describe('findImplementationFor', () => {
+        it('should throw a standard error if the resolve type model name does not exist in dependencies', () => {
+          class Person extends SchematicModel {
+            static resolveType() {
+              return 'Person';
+            }
+          }
+          Person.schema = schema;
+          try {
+            Person.findImplementationFor();
+          } catch (error) {
+            expect(error.constructor.name).toEqual('ResolveTypeMissingError');
+          }
+        });
+        it('should return accurate model from findImplementationFor', () => {
+          class Person extends SchematicModel {
+            static resolveType() {
+              return 'Person';
+            }
+          }
+          Person.schema = schema;
+          Person.dependencies = [Person];
+          const ImplementationModel = Person.findImplementationFor();
+          expect(ImplementationModel).toEqual(Person);
+        });
       });
     });
   });
@@ -229,11 +251,12 @@ describe('SchematicModel', () => {
       class ExtensiveDummy extends SchematicModel {}
       ExtensiveDummy.schema = schema;
       class Person extends SchematicModel {
-        static findImplementationFor() {
-          return ExtensiveDummy;
+        static resolveType() {
+          return 'ExtensiveDummy';
         }
       }
       Person.schema = schema;
+      Person.dependencies = [ExtensiveDummy];
       class CarOfPeople extends SchematicModel {}
       CarOfPeople.dependencies = [Person];
       CarOfPeople.schema = schema;
@@ -264,8 +287,34 @@ describe('SchematicModel', () => {
   });
   describe('getSchema', () => {
     class Person extends SchematicModel {
-      static findImplementationFor() {
-        return this;
+      static resolveType() {
+        return 'Person';
+      }
+    }
+    Person.schema = schema;
+    class CarOfPeople extends SchematicModel {}
+    CarOfPeople.dependencies = [Person];
+    CarOfPeople.schema = schema;
+    class RoadOfCars extends SchematicModel {}
+    RoadOfCars.dependencies = [CarOfPeople];
+    RoadOfCars.schema = schema;
+    it('should be able to find one schema for model with no dependencies', () => {
+      const schemas = Person.getSchema();
+      expect(schemas.length).toEqual(1);
+    });
+    it('should be able to find two schemas for model with no one dep, which itself has no deps', () => {
+      const schemas = CarOfPeople.getSchema();
+      expect(schemas.length).toEqual(2);
+    });
+    it('should be able to find three schemas for model with no one dep, which itself has one dep', () => {
+      const schemas = RoadOfCars.getSchema();
+      expect(schemas.length).toEqual(3);
+    });
+  });
+  describe('getResolvers', () => {
+    class Person extends SchematicModel {
+      static resolveType() {
+        return 'Person';
       }
     }
     Person.schema = schema;

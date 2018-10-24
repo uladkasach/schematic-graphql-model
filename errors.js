@@ -43,7 +43,12 @@ class MissingMethodError extends Error {
     this.method = method;
   }
 }
-
+class ResolveTypeMissingError extends Error {
+  constructor(type, modelName) {
+    const message = `Resolve type model, ${type}, is missing from the interface model, ${modelName}, dependencies.`;
+    super(message);
+  }
+}
 
 export {
   NonExistantTypeDefinitionError,
@@ -51,4 +56,5 @@ export {
   UnknownKindError,
   ValidityError,
   MissingMethodError,
+  ResolveTypeMissingError,
 };

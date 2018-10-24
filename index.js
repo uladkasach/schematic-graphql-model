@@ -1,6 +1,6 @@
 import parseGraphQLSchema from './parseGraphQLSchema';
 import addValidationToSchema from './addValidationToSchema';
-import { ValidityError, MissingMethodError } from './errors';
+import { ValidityError, MissingMethodError, ResolveTypeMissingError } from './errors';
 
 // used to wrap props as schematic models, when there is a target model
 
@@ -77,8 +77,8 @@ export default class SchematicModel {
       if (dependencies) dependencies.forEach((dep) => { customTypes[dep.name] = dep; }); // take each dependency and put it in customTypes obj for lookups
       const { fields, self } = parseGraphQLSchema({ schema, modelName: name, customTypes });
 
-      // 1.2 this model is an interface, check to make sure that the method .findImplementaionFor has been defined on the class
-      if (self.interface && typeof this.findImplementationFor !== 'function') throw new MissingMethodError('findImplementationFor', 'is an interface type');
+      // 1.2 this model is an interface, check to make sure that the method .findImplementationFor has been defined on the class
+      if (self.interface && typeof this.resolveType !== 'function') throw new MissingMethodError('resolveType', 'is an interface type');
 
       // 2. attach validation methods to each field
       const fieldsWithValidation = addValidationToSchema({ schema: fields, customTypes });
@@ -113,5 +113,47 @@ export default class SchematicModel {
 
     // return all schemas
     return schemas;
+  }
+
+  /**
+    @method getResolvers
+    @returns object of resolvers, with potentially one from each dependency
+    - PURPOSE: to enable the SchematicModel to autogenerate the __resolveType resolver
+  */
+  static getResolvers() {
+    let resolvers = {};
+
+    // add own resolver to object, if needed
+    const { self } = this.retreiveParsedSchema();
+    if (self.interface) { // if this model is an interface
+      const resolveTypeMethod = this.resolveType;
+      resolvers[this.name] = { // add the Model.__resolveType method to resolvers
+        __resolveType: resolveTypeMethod,
+      };
+    }
+
+    // add all resolvers from dependencies
+    const deps = this.dependencies || [];
+    deps.forEach((dep) => {
+      const thisResolversObject = dep.getResolvers();
+      resolvers = Object.assign(resolvers, thisResolversObject); // add the resolvers from dependency objects
+    });
+
+    // return all resolvers
+    return resolvers;
+  }
+
+  /**
+    @method findImplementationFor
+    @returns { SchematicModel } - a schematic model of the implemented type
+    NOTE: only relevant to interface type models
+    Uses the resolveType method to determine name of implementation to resolve to, returns the model with that name from dependencies
+  */
+  static findImplementationFor(props) {
+    const { dependencies } = this.retreiveParsedSchema();
+    const modelName = this.resolveType(props); // note, retreiveParsedSchema checks that resolveType is defined
+    const ImplementationModel = dependencies[modelName];
+    if (!ImplementationModel) throw new ResolveTypeMissingError(modelName, this.name);
+    return ImplementationModel;
   }
 }
