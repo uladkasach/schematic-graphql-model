@@ -27,8 +27,8 @@ class UnknownKindError extends Error {
 }
 class ValidityError extends Error {
   constructor(errors, props, model) {
-    const message = `Errors on ${Object.keys(errors).length} properties were found while validating properties for model ${model}.
-  -> ${JSON.stringify(errors)}`;
+    const message = `Errors on ${Object.keys(errors).length} properties were found while validating properties for model ${model}.:
+${JSON.stringify(errors, null, 2)}`;
     super(message);
 
     this.errors = errors;
