@@ -15,6 +15,9 @@ describe('SchematicModel', () => {
       age: Int
     }
 
+    type RoadOfCars {
+      cars: [CarOfPeople]
+    }
     type CarOfPeople {
       driver: Person
     }
@@ -257,6 +260,32 @@ describe('SchematicModel', () => {
         expect(car.driver.constructor.name).toEqual('ExtensiveDummy');
         expect(car.driver.luckyNumbers).toEqual([21, 7, 3]); // also check that implementation specific props had persisted
       });
+    });
+  });
+  describe('getSchema', () => {
+    class Person extends SchematicModel {
+      static findImplementationFor() {
+        return this;
+      }
+    }
+    Person.schema = schema;
+    class CarOfPeople extends SchematicModel {}
+    CarOfPeople.dependencies = [Person];
+    CarOfPeople.schema = schema;
+    class RoadOfCars extends SchematicModel {}
+    RoadOfCars.dependencies = [CarOfPeople];
+    RoadOfCars.schema = schema;
+    it('should be able to find one schema for model with no dependencies', () => {
+      const schemas = Person.getSchema();
+      expect(schemas.length).toEqual(1);
+    });
+    it('should be able to find two schemas for model with no one dep, which itself has no deps', () => {
+      const schemas = CarOfPeople.getSchema();
+      expect(schemas.length).toEqual(2);
+    });
+    it('should be able to find three schemas for model with no one dep, which itself has one dep', () => {
+      const schemas = RoadOfCars.getSchema();
+      expect(schemas.length).toEqual(3);
     });
   });
 });

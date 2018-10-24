@@ -42,6 +42,7 @@ export default class SchematicModel {
     });
   }
 
+
   /**
     -- base methods --------------------------------------------
   */
@@ -66,6 +67,7 @@ export default class SchematicModel {
 
   /**
     convert the graphql schema into a more interpretable and actionable (and validated) schema object
+    - caches the schema results
   */
   static retreiveParsedSchema() {
     const { name, schema, dependencies } = this; // extract form the class static properties
@@ -89,5 +91,27 @@ export default class SchematicModel {
       };
     }
     return this.parsedSchema;
+  }
+
+  /**
+    @method getSchema
+    @returns list of schemas: one schema from self and all from each dependency
+  */
+  static getSchema() {
+    const schemas = [];
+
+    // push own schema to schemas
+    const ownSchema = this.schema;
+    schemas.push(ownSchema);
+
+    // add all schemas from dependencies to schemas
+    const deps = this.dependencies || [];
+    deps.forEach((dep) => {
+      const listOfSchema = dep.getSchema();
+      schemas.push(...listOfSchema); // extend the schemas array
+    });
+
+    // return all schemas
+    return schemas;
   }
 }
