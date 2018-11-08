@@ -1,6 +1,6 @@
 /* eslint no-new: "off" */
 import { gql } from 'apollo-server-lambda';
-import SchematicModel from './index';
+import SchematicModel from './model';
 
 
 describe('SchematicModel', () => {

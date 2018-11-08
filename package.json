@@ -1,0 +1,31 @@
+{
+  "name": "tugether-service-graphql",
+  "version": "1.0.0",
+  "description": "Extend this model class with your graphql schema to enable object validation (for more explanatory error messages & default resolvers) as well as simpler schema composition.",
+  "main": "src/index.js",
+  "scripts": {
+    "unit-test": "jest --verbose",
+    "test": "npm run unit-test",
+    "build": "rm dist/ -rf && babel src -d dist/ --ignore '**/__mocks__/*'"
+  },
+  "author": "UladKasach",
+  "license": "ISC",
+  "dependencies": {
+    "apollo-server-lambda": "^2.0.0-xrc.11",
+    "flat": "^4.1.0",
+    "graphql": "^14.0.2",
+    "lodash.merge": "^4.6.1",
+    "query-string": "^6.1.0"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-core": "^6.26.3",
+    "babel-preset-env": "^1.7.0",
+    "eslint": "^5.4.0",
+    "eslint-config-airbnb-base": "^13.1.0",
+    "eslint-plugin-graphql": "^2.1.1",
+    "eslint-plugin-import": "^2.14.0",
+    "graphql-tools": "^4.0.1",
+    "jest": "^23.5.0"
+  }
+}

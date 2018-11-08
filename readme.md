@@ -1,11 +1,69 @@
 # Schematic Model
-Schematic model takes graphql schema as an input and provides schema validation + object validation out of the box.
+Schematic model takes graphql schema as an input and provides schematic object validation and simpler schema composition out of the box.
 
 This enables the user to confidently use graphql default resolvers - guaranteeing that each model object has already been validated and will not result in errors. It also provides a way to add custom error checking to models without having to create custom resolvers.
 
+This also enables the user to easily compose schemas.
 
-# Dev
-Consider contributing or using:
-https://github.com/Workpop/typed-validation
+# Examples
 
-https://github.com/graphql/graphql-js/issues/559
+1. define your model
+```js
+// idea.js
+import { gql } from 'apollo-server-lambda';
+import SchematicModel from 'schematic-graphql-model';
+import Image from './image';
+
+const schema = `
+  type Idea {
+    id: String!
+    title: String!
+    description: String!
+    images: [Image]
+  }
+`;
+
+export default class Idea extends SchematicModel {}
+Idea.schema = gql(schema);
+Idea.dependencies = [Image];
+```
+
+2. define your query
+```js
+import Idea from '../models/idea';
+import sampleIdeas from '../dummyData/ideas';
+
+/**
+  define the typedefs for the query
+*/
+const defs = `
+  extend type Query {
+    idea(id: ID): Idea
+    ideas: [Idea]
+  }
+`;
+
+/**
+  define the resolvers
+  - use the Idea model to validate the data we are passing to gql
+  - TODO: use real data
+*/
+const sampleIdeasParsed = sampleIdeas.map(ideaData => new Idea(ideaData));
+const resolvers = {
+  Query: {
+    ideas: () => sampleIdeasParsed,
+  },
+};
+
+/*
+  export the results
+*/
+const models = [Idea];
+export default {
+  models,
+  defs,
+  resolvers,
+};
+```
+
+3. compose your queries and models
