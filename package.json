@@ -1,12 +1,14 @@
 {
-  "name": "tugether-service-graphql",
+  "name": "schematic-graphql-model",
   "version": "1.0.1",
   "description": "Extend this model class with your graphql schema to enable object validation (for more explanatory error messages & default resolvers) as well as simpler schema composition.",
-  "main": "src/index.js",
+  "main": "dist/index.js",
   "scripts": {
     "unit-test": "jest --verbose",
     "test": "npm run unit-test",
-    "build": "rm dist/ -rf && babel src -d dist/ --ignore '**/__mocks__/*'"
+    "build": "rm dist/ -rf && babel src -d dist/ --ignore '**/__mocks__/*'",
+    "preversion": "npm run test",
+    "prepublish": "npm run test && npm run build"
   },
   "author": "UladKasach",
   "license": "ISC",
