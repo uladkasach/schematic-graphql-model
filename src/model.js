@@ -36,9 +36,13 @@ export default class SchematicModel {
     fieldKeys.forEach((key) => {
       const fieldSchema = fields[key];
       const value = props[key];
-      const TargetModel = (fieldSchema.custom) ? dependencies[fieldSchema.type] : null;
-      const parsedValue = (TargetModel) ? castValuesToSchematicModels(value, TargetModel) : value;
-      this[key] = parsedValue;
+      if (typeof value !== 'undefined' && value !== null) { // if the value is defined, cast it into its model
+        const TargetModel = (fieldSchema.custom) ? dependencies[fieldSchema.type] : null;
+        const parsedValue = (TargetModel) ? castValuesToSchematicModels(value, TargetModel) : value;
+        this[key] = parsedValue;
+      } else { // otherwise, just retain the null value
+        this[key] = value;
+      }
     });
   }
 

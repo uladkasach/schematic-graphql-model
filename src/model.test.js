@@ -9,6 +9,10 @@ describe('SchematicModel', () => {
       dummies: [Dummy]
       driver: Dummy!
     }
+    type CarOfBiggerDummies {
+      dummies: [Dummy]
+      driver: Dummy # driver not required
+    }
 
     interface Person {
       name: String
@@ -182,11 +186,21 @@ describe('SchematicModel', () => {
       });
     });
     describe('custom type dependencies', () => {
+      // define dummy
       class Dummy extends SchematicModel {}
       Dummy.schema = schema;
+
+      // define car of dummies
       class CarOfDummies extends SchematicModel {}
       CarOfDummies.dependencies = [Dummy];
       CarOfDummies.schema = schema;
+
+      // define car of bigger dummies
+      class CarOfBiggerDummies extends SchematicModel {}
+      CarOfBiggerDummies.schema = schema;
+      CarOfBiggerDummies.dependencies = [Dummy];
+
+      // define tests
       it('should throw an error if dependencies props are invalid', () => {
         try {
           new CarOfDummies({
@@ -245,6 +259,11 @@ describe('SchematicModel', () => {
           dummies: [],
         });
         expect(car.driver.constructor.name).toEqual('Dummy');
+      });
+      it('should respect that some custom dependencies are not required', () => {
+        new CarOfBiggerDummies({
+          dummies: [],
+        });
       });
     });
     describe('interface type dependencies', () => {

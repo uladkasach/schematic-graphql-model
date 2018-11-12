@@ -78,12 +78,32 @@ describe('addValidationToSchema', () => {
     it('should define accurate validation for custom type', () => {
       const validation = determineValidationForField({
         custom: true,
+        required: true,
         type: 'AwesomeType',
       }, {
         AwesomeType: {
           validate: value => ((value === 'awesome') ? [] : ['not awesome']), // array of errros
         },
       });
+      expect(validation('awesome')).toEqual(true);
+      expect(validation('Test')).toEqual(false);
+      expect(validation(12)).toEqual(false);
+      expect(validation(12.5)).toEqual(false);
+      expect(validation(1)).toEqual(false);
+      expect(validation(0)).toEqual(false);
+      expect(validation(true)).toEqual(false);
+      expect(validation(false)).toEqual(false);
+    });
+    it('should define accurate validation for custom type when not required', () => {
+      const validation = determineValidationForField({
+        custom: true,
+        type: 'AwesomeType',
+      }, {
+        AwesomeType: {
+          validate: value => ((value === 'awesome') ? [] : ['not awesome']), // array of errros
+        },
+      });
+      expect(validation(undefined)).toEqual(true);
       expect(validation('awesome')).toEqual(true);
       expect(validation('Test')).toEqual(false);
       expect(validation(12)).toEqual(false);
