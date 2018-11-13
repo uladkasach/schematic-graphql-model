@@ -2,7 +2,7 @@
   @param query.defs - defs for query
   @param query.models - models object for query; used to extract defs from
 */
-export const extractFullTypeDefsFromQuery = ({ defs, models }) => {
+const extractFullTypeDefsFromQueryOrMutation = ({ defs, models }) => {
   // extract modelTypeDefs from each model
   const listOfListsOfSchemas = models.map(model => model.getSchema());
   const modelTypeDefs = [].concat(...listOfListsOfSchemas); // merge the lists from the listOfLists
@@ -16,19 +16,21 @@ export const extractFullTypeDefsFromQuery = ({ defs, models }) => {
   @param {queries} - list of queries to merge typeDefs for
   @param {queryBaseDef} - a query base definition string, since queries extend the Query object
 */
-export const extractTypeDefsFromQueries = ({ queries, queryBaseDef }) => {
-  const listOfQueryTypeDefs = queries.map(extractFullTypeDefsFromQuery);
-  const queryTypeDefs = [].concat(...listOfQueryTypeDefs);
-  const typeDefs = [queryBaseDef, ...queryTypeDefs];
+const extractTypeDefsFromQueriesOrMutations = ({ data, baseDef }) => {
+  const listOfTypeDefs = data.map(extractFullTypeDefsFromQueryOrMutation);
+  const typeDefsWithoutBase = [].concat(...listOfTypeDefs);
+  const typeDefs = [baseDef, ...typeDefsWithoutBase];
   return typeDefs;
 };
+export const extractTypeDefsFromQueries = ({ queries, queryBaseDef }) => extractTypeDefsFromQueriesOrMutations({ data: queries, baseDef: queryBaseDef }); // just forward the functionality
+export const extractTypeDefsFromMutations = ({ mutations, mutationBaseDef }) => extractTypeDefsFromQueriesOrMutations({ data: mutations, baseDef: mutationBaseDef }); // just forward the functionality
 
 
 /**
-  @param query.resolvers - resolvers object for query
-  @param query.models - models object for query; used to extract __resolveType resolvers from
+  @param query.resolvers - resolvers object for query or mutation
+  @param query.models - models object for query or mutation; used to extract __resolveType resolvers from
 */
-export const extractFullResolversFromQuery = ({ resolvers, models }) => {
+const extractFullResolversFromQueryOrMutation = ({ resolvers, models }) => {
   // extract resolvers from model (model will return object of its __resolveType and its dependencies __resolveType s)
   const listOfResolveTypeResolvers = models.map(model => model.getResolvers());
   const resolveTypeResolvers = Object.assign(...listOfResolveTypeResolvers);
@@ -39,22 +41,28 @@ export const extractFullResolversFromQuery = ({ resolvers, models }) => {
 };
 
 /**
-  @param {queries} - list of queries to merge resolvers for
+  @param {enum('Mutation', 'Query')} actionClass - which type to extract resolvers for
+  @param data - what data to extract the resolvers for
 */
-export const extractResolversFromQueries = ({ queries }) => {
-  const listOfResolversForEachQuery = queries.map(extractFullResolversFromQuery);
+const extractResolversFromActionClass = ({ actionClass, data }) => {
+  // validate action class
+  if (!['Mutation', 'Query'].includes(actionClass)) throw new Error('actionClass must be Mutation or Query');
 
-  // take special care of the Query resolver, we need to merge each of those from the list created from each query
-  const queryChildPartResolvers = listOfResolversForEachQuery.map(resolversForQuery => resolversForQuery.Query);
-  const mergedQueryChildPartResolvers = Object.assign({}, ...queryChildPartResolvers);
+  const listOfResolversForEachObject = data.map(extractFullResolversFromQueryOrMutation);
+
+  // take special care of the Muataion resolver, we need to merge each of those from the list created from each query
+  const childPartResolvers = listOfResolversForEachObject.map(resolversForObject => resolversForObject[actionClass]);
+  const mergedChildPartResolvers = Object.assign({}, ...childPartResolvers);
 
   // get a list of resolvers that do not include the Query resolver - that way when we finally merge, we wont overwrite the merged Query resolver we took special care to create
-  const nonQueryPartResolvers = listOfResolversForEachQuery.map((resolversForQuery) => {
-    const resolversWithoutQuery = Object.assign({}, resolversForQuery);
-    delete resolversWithoutQuery.Query;
-    return resolversWithoutQuery;
+  const nonActionClassPartResolvers = listOfResolversForEachObject.map((resolversForQuery) => {
+    const resolversWithoutActionClass = Object.assign({}, resolversForQuery);
+    delete resolversWithoutActionClass[actionClass];
+    return resolversWithoutActionClass;
   });
 
-  const resolvers = Object.assign({}, ...nonQueryPartResolvers, { Query: mergedQueryChildPartResolvers });
+  const resolvers = Object.assign({}, ...nonActionClassPartResolvers, { [actionClass]: mergedChildPartResolvers });
   return resolvers;
 };
+export const extractResolversFromQueries = ({ queries }) => extractResolversFromActionClass({ actionClass: 'Query', data: queries });
+export const extractResolversFromMutations = ({ mutations }) => extractResolversFromActionClass({ actionClass: 'Mutation', data: mutations });

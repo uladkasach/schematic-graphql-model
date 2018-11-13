@@ -1,4 +1,5 @@
 // TODO - fix these tests by adding good, publicizable data models
+// TODO - test that generalizations all work
 
 import { extractResolversFromQueries } from './queryParsing';
 
