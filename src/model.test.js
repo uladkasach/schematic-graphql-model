@@ -19,10 +19,10 @@ describe('SchematicModel', () => {
       age: Int
     }
 
-    type RoadOfCars {
+    interface RoadOfCars {
       cars: [CarOfPeople]
     }
-    type CarOfPeople {
+    interface CarOfPeople {
       driver: Person
     }
 
@@ -276,7 +276,11 @@ describe('SchematicModel', () => {
       }
       Person.schema = schema;
       Person.dependencies = [ExtensiveDummy];
-      class CarOfPeople extends SchematicModel {}
+      class CarOfPeople extends SchematicModel {
+        static resolveType() {
+          return 'CarOfPeopleOption';
+        }
+      }
       CarOfPeople.dependencies = [Person];
       CarOfPeople.schema = schema;
       it('initialize if all dependency props are valid', () => {
@@ -331,29 +335,99 @@ describe('SchematicModel', () => {
     });
   });
   describe('getResolvers', () => {
-    class Person extends SchematicModel {
-      static resolveType() {
-        return 'Person';
+    describe('__resolveType auto created resolver', () => {
+      class Person extends SchematicModel {
+        static resolveType() {
+          return 'PersonOption';
+        }
       }
-    }
-    Person.schema = schema;
-    class CarOfPeople extends SchematicModel {}
-    CarOfPeople.dependencies = [Person];
-    CarOfPeople.schema = schema;
-    class RoadOfCars extends SchematicModel {}
-    RoadOfCars.dependencies = [CarOfPeople];
-    RoadOfCars.schema = schema;
-    it('should be able to find one schema for model with no dependencies', () => {
-      const schemas = Person.getSchema();
-      expect(schemas.length).toEqual(1);
+      Person.schema = schema;
+      class CarOfPeople extends SchematicModel {
+        static resolveType() {
+          return 'CarOfPeopleOption';
+        }
+      }
+      CarOfPeople.dependencies = [Person];
+      CarOfPeople.schema = schema;
+      class RoadOfCars extends SchematicModel {
+        static resolveType() {
+          return 'RoadOfCarsOption';
+        }
+      }
+      RoadOfCars.dependencies = [CarOfPeople];
+      RoadOfCars.schema = schema;
+      it('should be able to find one schema for model with no dependencies', () => {
+        const resolvers = Person.getResolvers();
+        expect(Object.keys(resolvers).length).toEqual(1);
+      });
+      it('should be able to find two schemas for model with one dep, which itself has no deps', () => {
+        const resolvers = CarOfPeople.getResolvers();
+        expect(Object.keys(resolvers).length).toEqual(2);
+      });
+      it('should be able to find three schemas for model with one dep, which itself has one dep', () => {
+        const resolvers = RoadOfCars.getResolvers();
+        expect(Object.keys(resolvers).length).toEqual(3);
+      });
     });
-    it('should be able to find two schemas for model with no one dep, which itself has no deps', () => {
-      const schemas = CarOfPeople.getSchema();
-      expect(schemas.length).toEqual(2);
-    });
-    it('should be able to find three schemas for model with no one dep, which itself has one dep', () => {
-      const schemas = RoadOfCars.getSchema();
-      expect(schemas.length).toEqual(3);
+    describe('custom resolvers are respected', () => {
+      class Dummy extends SchematicModel {
+        static resolveType() {
+          return 'PersonOption';
+        }
+      }
+      Dummy.schema = schema;
+      Dummy.resolvers = {
+        name: () => 'hello',
+      };
+      class Person extends SchematicModel {
+        static resolveType() {
+          return 'PersonOption';
+        }
+      }
+      Person.schema = schema;
+      Person.resolvers = {
+        name: () => 'hello',
+      };
+      class CarOfPeople extends SchematicModel {
+        static resolveType() {
+          return 'CarOfPeopleOption';
+        }
+      }
+      CarOfPeople.dependencies = [Person];
+      CarOfPeople.schema = schema;
+      class RoadOfCars extends SchematicModel {
+        static resolveType() {
+          return 'RoadOfCarsOption';
+        }
+      }
+      RoadOfCars.dependencies = [CarOfPeople];
+      RoadOfCars.schema = schema;
+      it('should be able to find one resolver object for model with no dependencies', () => {
+        const resolvers = Dummy.getResolvers();
+        expect(Object.keys(resolvers).length).toEqual(1); // only one object with resolvers
+        expect(Object.keys(resolvers.Dummy).length).toEqual(1); // only one resolver for the dummy object
+        expect(resolvers.Dummy.name()).toEqual('hello');
+      });
+      it('should be able to find one resolver object with two resolvers for model with no dependencies but is interface', () => {
+        const resolvers = Person.getResolvers();
+        expect(Object.keys(resolvers).length).toEqual(1); // only one object with resolvers
+        expect(Object.keys(resolvers.Person).length).toEqual(2); // two resolvers for the person object
+        expect(resolvers.Person.name()).toEqual('hello');
+        expect(resolvers.Person.__resolveType()).toEqual('PersonOption'); // eslint-disable-line no-underscore-dangle
+      });
+      it('should be able to find two schemas for model with one dep, which itself has no deps', () => {
+        const resolvers = CarOfPeople.getResolvers();
+        expect(Object.keys(resolvers).length).toEqual(2); // two objects with resolvers
+        expect(Object.keys(resolvers.Person).length).toEqual(2); // two resolvers for the person object
+        expect(Object.keys(resolvers.CarOfPeople).length).toEqual(1); // one resolver for the carOfPeople object
+      });
+      it('should be able to find three schemas for model with one dep, which itself has one dep', () => {
+        const resolvers = RoadOfCars.getResolvers();
+        expect(Object.keys(resolvers).length).toEqual(3); // two objects with resolvers
+        expect(Object.keys(resolvers.Person).length).toEqual(2); // two resolvers for the person object
+        expect(Object.keys(resolvers.CarOfPeople).length).toEqual(1); // one resolver for the carOfPeople object
+        expect(Object.keys(resolvers.RoadOfCars).length).toEqual(1); // one resolver for the RoadOfCars object
+      });
     });
   });
 });

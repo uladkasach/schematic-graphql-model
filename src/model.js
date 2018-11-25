@@ -123,28 +123,32 @@ export default class SchematicModel {
     @method getResolvers
     @returns object of resolvers, with potentially one from each dependency
     - PURPOSE: to enable the SchematicModel to autogenerate the __resolveType resolver
+    - PURPOSE: to enable the user to define resolvers for each object in one place
   */
   static getResolvers() {
-    let resolvers = {};
+    let fullResolvers = {}; // list of all resolvers
 
-    // add own resolver to object, if needed
+    // add own resolver to object
     const { self } = this.retreiveParsedSchema();
+    let ownResolvers = {};
+    if (this.resolvers) ownResolvers = Object.assign(ownResolvers, this.resolvers); // extend the own resolvers object with the user defined resolvers
     if (self.interface) { // if this model is an interface
       const resolveTypeMethod = this.resolveType;
-      resolvers[this.name] = { // add the Model.__resolveType method to resolvers
+      ownResolvers = Object.assign(ownResolvers, { // add the Model.__resolveType method to resolvers
         __resolveType: resolveTypeMethod,
-      };
+      });
     }
+    if (Object.keys(ownResolvers).length > 0) fullResolvers[this.name] = ownResolvers; // if we have resolvers for this objet, add it to the fullResolvers object
 
     // add all resolvers from dependencies
     const deps = this.dependencies || [];
     deps.forEach((dep) => {
       const thisResolversObject = dep.getResolvers();
-      resolvers = Object.assign(resolvers, thisResolversObject); // add the resolvers from dependency objects
+      fullResolvers = Object.assign(fullResolvers, thisResolversObject); // add the resolvers from dependency objects
     });
 
     // return all resolvers
-    return resolvers;
+    return fullResolvers;
   }
 
   /**

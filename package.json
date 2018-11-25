@@ -8,6 +8,7 @@
     "test": "npm run unit-test",
     "build": "rm dist/ -rf && babel src -d dist/ --ignore '**/__mocks__/*'",
     "preversion": "npm run test",
+    "postversion": "git push && git push --tags",
     "prepublish": "npm run test && npm run build"
   },
   "author": "UladKasach",
