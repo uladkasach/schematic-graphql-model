@@ -70,6 +70,13 @@ export default class SchematicModel {
   }
 
   /**
+    retrieves the typename based
+  */
+  static getTypeName() {
+    return this.gqlTypeName || this.name; // if typename is explicitly defined, return it; else, default to model name (i.e., assume model name = type name)
+  }
+
+  /**
     convert the graphql schema into a more interpretable and actionable (and validated) schema object
     - caches the schema results
   */
@@ -77,9 +84,9 @@ export default class SchematicModel {
     if (!this.constructor.parsedSchema) { // if parsed schema is not defined, define it for the constructor
       // 1. retreive the parsed schema
       const customTypes = {}; // object to build into
-      if (this.dependencies) this.dependencies.forEach((dep) => { customTypes[dep.name] = dep; }); // take each dependency and put it in customTypes obj for lookups
+      if (this.dependencies) this.dependencies.forEach((dep) => { customTypes[dep.getTypeName()] = dep; }); // take each dependency and put it in customTypes obj for lookups
       const fieldsWithResolvers = (this.resolvers) ? Object.keys(this.resolvers) : [];
-      const modelTypeName = this.gqlTypeName || this.name; // default to the model name if not explicitly defined
+      const modelTypeName = this.getTypeName(); // default to the model name if not explicitly defined
       const { fields, self } = parseGraphQLSchema({ schema: this.schema, modelTypeName, customTypes, resolvers: fieldsWithResolvers });
 
       // 1.2 this model is an interface, check to make sure that the method .findImplementationFor has been defined on the class

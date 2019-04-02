@@ -443,4 +443,17 @@ describe('SchematicModel', () => {
       });
     });
   });
+  describe('class methods', () => {
+    describe('getTypeName', () => {
+      it('should default to model name', () => {
+        class Dummy extends SchematicModel {}
+        expect(Dummy.getTypeName()).toEqual('Dummy');
+      });
+      it('should resolve the name specified if explicitly specified', () => {
+        class GraphQLDummy extends SchematicModel {}
+        GraphQLDummy.gqlTypeName = 'Dummy';
+        expect(GraphQLDummy.getTypeName()).toEqual('Dummy');
+      });
+    });
+  });
 });
