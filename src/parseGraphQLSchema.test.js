@@ -42,7 +42,7 @@ describe('SchematicModel', () => {
     describe('basic schema types', () => {
       it('should throw an error if ObjectTypeDefinition is not found for this class.name in schema', () => {
         try {
-          parseGraphQLSchema({ schema, modelName: 'Dummy404' });
+          parseGraphQLSchema({ schema, modelTypeName: 'Dummy404' });
           throw new Error('should not reach here');
         } catch (error) {
           expect(error.constructor.name).toEqual('NonExistantTypeDefinitionError');
@@ -53,14 +53,14 @@ describe('SchematicModel', () => {
         const relevantDef = changedSchema.definitions.find(def => def.kind === 'ObjectTypeDefinition' && def.name.value === 'Dummy');
         relevantDef.fields[1].type.name.value = 'Bob';
         try {
-          parseGraphQLSchema({ schema: changedSchema, modelName: 'Dummy' });
+          parseGraphQLSchema({ schema: changedSchema, modelTypeName: 'Dummy' });
           throw new Error('should not reach here');
         } catch (error) {
           expect(error.constructor.name).toEqual('UnknownTypeError');
         }
       });
       it('should be able to interpret a basic graphql schema', () => {
-        const { fields, self } = parseGraphQLSchema({ schema, modelName: 'Dummy' });
+        const { fields, self } = parseGraphQLSchema({ schema, modelTypeName: 'Dummy' });
         expect(self.interface).toEqual(false);
         expect(fields).toMatchObject({
           id: { required: true, type: 'String', list: false },
@@ -76,7 +76,7 @@ describe('SchematicModel', () => {
     describe('custom types', () => {
       it('should be able to interpret a graphql schema with regular custom types', () => {
         const parsedDummyModelMock = { retreiveParsedSchema: () => ({ self: { interface: false } }) };
-        const { fields, self } = parseGraphQLSchema({ schema, modelName: 'CarOfDummies', customTypes: { Dummy: parsedDummyModelMock } });
+        const { fields, self } = parseGraphQLSchema({ schema, modelTypeName: 'CarOfDummies', customTypes: { Dummy: parsedDummyModelMock } });
         expect(self.interface).toEqual(false);
         expect(fields).toMatchObject({
           driver: { required: true, type: 'Dummy', custom: true, list: false },
@@ -85,7 +85,7 @@ describe('SchematicModel', () => {
       });
       describe('interface', () => {
         it('should be able to interpret a graphql schema with interface types', () => {
-          const { fields, self } = parseGraphQLSchema({ schema, modelName: 'Person' });
+          const { fields, self } = parseGraphQLSchema({ schema, modelTypeName: 'Person' });
           expect(self.interface).toEqual(true);
           expect(fields).toMatchObject({
             name: { required: false, type: 'String', list: false },
@@ -93,7 +93,7 @@ describe('SchematicModel', () => {
           });
         });
         it('should be able to interpret a schema that implements an interface type', () => {
-          const { fields } = parseGraphQLSchema({ schema, modelName: 'ExtensiveDummy' });
+          const { fields } = parseGraphQLSchema({ schema, modelTypeName: 'ExtensiveDummy' });
           expect(fields).toMatchObject({
             id: { required: true, type: 'String', list: false },
             name: { required: false, type: 'String', list: false },
@@ -106,7 +106,7 @@ describe('SchematicModel', () => {
         });
         it('should be able to define when a field is composed of an interface', () => { // used to evaluate which implementation of interface to validate
           const parsedPersonModelMock = { retreiveParsedSchema: () => ({ self: { interface: true } }) };
-          const { fields } = parseGraphQLSchema({ schema, modelName: 'CarOfPeople', customTypes: { Person: parsedPersonModelMock } });
+          const { fields } = parseGraphQLSchema({ schema, modelTypeName: 'CarOfPeople', customTypes: { Person: parsedPersonModelMock } });
           expect(fields).toMatchObject({
             driver: { required: false, type: 'Person', custom: true, interface: true, list: false },
           });
@@ -115,7 +115,7 @@ describe('SchematicModel', () => {
     });
     describe('resolvers', () => {
       it('should be able to determine whether fields have resolvers - no resolvers', () => {
-        const { fields } = parseGraphQLSchema({ schema, modelName: 'ExtensiveDummy' });
+        const { fields } = parseGraphQLSchema({ schema, modelTypeName: 'ExtensiveDummy' });
         expect(fields).toMatchObject({
           id: { required: true, type: 'String', list: false, resolver: false },
           name: { required: false, type: 'String', list: false, resolver: false },
@@ -127,7 +127,7 @@ describe('SchematicModel', () => {
         });
       });
       it('should be able to determine whether fields have resolvers - one resolver', () => {
-        const { fields } = parseGraphQLSchema({ schema, modelName: 'ExtensiveDummy', resolvers: ['height'] });
+        const { fields } = parseGraphQLSchema({ schema, modelTypeName: 'ExtensiveDummy', resolvers: ['height'] });
         expect(fields).toMatchObject({
           id: { required: true, type: 'String', list: false, resolver: false },
           name: { required: false, type: 'String', list: false, resolver: false },

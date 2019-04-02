@@ -74,13 +74,13 @@ export default class SchematicModel {
     - caches the schema results
   */
   static retreiveParsedSchema() {
-    const { name, schema, dependencies } = this; // extract form the class static properties
     if (!this.constructor.parsedSchema) { // if parsed schema is not defined, define it for the constructor
       // 1. retreive the parsed schema
       const customTypes = {}; // object to build into
-      if (dependencies) dependencies.forEach((dep) => { customTypes[dep.name] = dep; }); // take each dependency and put it in customTypes obj for lookups
+      if (this.dependencies) this.dependencies.forEach((dep) => { customTypes[dep.name] = dep; }); // take each dependency and put it in customTypes obj for lookups
       const fieldsWithResolvers = (this.resolvers) ? Object.keys(this.resolvers) : [];
-      const { fields, self } = parseGraphQLSchema({ schema, modelName: name, customTypes, resolvers: fieldsWithResolvers });
+      const modelTypeName = this.gqlTypeName || this.name; // default to the model name if not explicitly defined
+      const { fields, self } = parseGraphQLSchema({ schema: this.schema, modelTypeName, customTypes, resolvers: fieldsWithResolvers });
 
       // 1.2 this model is an interface, check to make sure that the method .findImplementationFor has been defined on the class
       if (self.interface && typeof this.resolveType !== 'function') throw new MissingMethodError('resolveType', 'is an interface type');
