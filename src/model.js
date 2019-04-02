@@ -79,7 +79,8 @@ export default class SchematicModel {
       // 1. retreive the parsed schema
       const customTypes = {}; // object to build into
       if (dependencies) dependencies.forEach((dep) => { customTypes[dep.name] = dep; }); // take each dependency and put it in customTypes obj for lookups
-      const { fields, self } = parseGraphQLSchema({ schema, modelName: name, customTypes });
+      const fieldsWithResolvers = (this.resolvers) ? Object.keys(this.resolvers) : [];
+      const { fields, self } = parseGraphQLSchema({ schema, modelName: name, customTypes, resolvers: fieldsWithResolvers });
 
       // 1.2 this model is an interface, check to make sure that the method .findImplementationFor has been defined on the class
       if (self.interface && typeof this.resolveType !== 'function') throw new MissingMethodError('resolveType', 'is an interface type');

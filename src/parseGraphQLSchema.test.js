@@ -59,7 +59,7 @@ describe('SchematicModel', () => {
           expect(error.constructor.name).toEqual('UnknownTypeError');
         }
       });
-      it('should be able to interpret a graphql schema', () => {
+      it('should be able to interpret a basic graphql schema', () => {
         const { fields, self } = parseGraphQLSchema({ schema, modelName: 'Dummy' });
         expect(self.interface).toEqual(false);
         expect(fields).toMatchObject({
@@ -110,6 +110,32 @@ describe('SchematicModel', () => {
           expect(fields).toMatchObject({
             driver: { required: false, type: 'Person', custom: true, interface: true, list: false },
           });
+        });
+      });
+    });
+    describe('resolvers', () => {
+      it('should be able to determine whether fields have resolvers - no resolvers', () => {
+        const { fields } = parseGraphQLSchema({ schema, modelName: 'ExtensiveDummy' });
+        expect(fields).toMatchObject({
+          id: { required: true, type: 'String', list: false, resolver: false },
+          name: { required: false, type: 'String', list: false, resolver: false },
+          age: { required: false, type: 'Int', list: false, resolver: false },
+          height: { required: true, type: 'Float', list: false, resolver: false },
+          female: { required: false, type: 'Boolean', list: false, resolver: false },
+          favoriteNumbers: { required: false, type: 'Int', list: true, resolver: false },
+          luckyNumbers: { required: true, type: 'Int', list: true, resolver: false },
+        });
+      });
+      it('should be able to determine whether fields have resolvers - one resolver', () => {
+        const { fields } = parseGraphQLSchema({ schema, modelName: 'ExtensiveDummy', resolvers: ['height'] });
+        expect(fields).toMatchObject({
+          id: { required: true, type: 'String', list: false, resolver: false },
+          name: { required: false, type: 'String', list: false, resolver: false },
+          age: { required: false, type: 'Int', list: false, resolver: false },
+          height: { required: true, type: 'Float', list: false, resolver: true },
+          female: { required: false, type: 'Boolean', list: false, resolver: false },
+          favoriteNumbers: { required: false, type: 'Int', list: true, resolver: false },
+          luckyNumbers: { required: true, type: 'Int', list: true, resolver: false },
         });
       });
     });

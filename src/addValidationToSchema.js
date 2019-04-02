@@ -32,7 +32,7 @@ export const determineValidationForField = (field, customTypes) => {
 
     // find any possible errors
     if (typeof value === 'undefined' || value === null) { // if not defined, then we must determine if it was required
-      if (field.required) errors.push('field is required'); // not defined and required, return false
+      if (field.required && !field.resolver) errors.push('field is required'); // not defined and required, return false
     } else { // if defined, we must validate the type passed
       // determine validity based on whether value is an array or not
       if (field.list && !Array.isArray(value)) errors.push('value must be an array for field');

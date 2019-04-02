@@ -75,6 +75,17 @@ describe('addValidationToSchema', () => {
       expect(validation()).toEqual(false);
       expect(validation(null)).toEqual(false);
     });
+    it('should define accurate validation for required type with a resolver', () => {
+      const validation = determineValidationForField({
+        required: true,
+        type: 'String',
+        resolver: true,
+      });
+      expect(validation(123)).toEqual(false);
+      expect(validation('true')).toEqual(true);
+      expect(validation()).toEqual(true);
+      expect(validation(null)).toEqual(true);
+    });
     it('should define accurate validation for custom type', () => {
       const validation = determineValidationForField({
         custom: true,

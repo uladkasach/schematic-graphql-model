@@ -58,6 +58,19 @@ describe('SchematicModel', () => {
         female: { required: false, type: 'Boolean', list: false },
       });
     });
+    it('should be able to retreive parsed schema with resolvers considered', () => {
+      class Dummy extends SchematicModel {}
+      Dummy.schema = schema;
+      Dummy.resolvers = { height: () => 12 };
+      const { fields } = Dummy.retreiveParsedSchema();
+      expect(fields).toMatchObject({
+        id: { required: true, type: 'String', list: false },
+        name: { required: false, type: 'String', list: false },
+        age: { required: false, type: 'Int', list: false },
+        height: { required: true, type: 'Float', list: false, resolver: true },
+        female: { required: false, type: 'Boolean', list: false },
+      });
+    });
     it('should append parsed schema to constructor after first time', () => { // this way we dont parse schema every time, we just cache the schema parsing results
       class Dummy extends SchematicModel {}
       Dummy.schema = schema;

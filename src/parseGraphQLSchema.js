@@ -2,7 +2,7 @@ import { NonExistantTypeDefinitionError, UnknownTypeError, UnknownKindError } fr
 import types from './types';
 
 const validDefTypes = ['ObjectTypeDefinition', 'InterfaceTypeDefinition'];
-const parseGraphQLSchema = ({ schema, modelName, customTypes = {} }) => {
+const parseGraphQLSchema = ({ schema, modelName, customTypes = {}, resolvers = [] }) => {
   // 1. find the GQL definition for the query of interest
   const definition = schema.definitions.find(def => validDefTypes.includes(def.kind) && def.name.value === modelName);
   if (typeof definition === 'undefined') throw new NonExistantTypeDefinitionError(modelName, schema);
@@ -39,6 +39,9 @@ const parseGraphQLSchema = ({ schema, modelName, customTypes = {} }) => {
     // if custom, determine whether or not it was an interface object
     const isInterface = (custom) ? customTypes[type].retreiveParsedSchema().self.interface : false;
 
+    // determine if field has a resolver
+    const hasAResolver = resolvers.includes(name);
+
     // return the results
     return {
       name,
@@ -47,6 +50,7 @@ const parseGraphQLSchema = ({ schema, modelName, customTypes = {} }) => {
       required,
       custom,
       interface: isInterface,
+      resolver: hasAResolver,
     };
   });
 
