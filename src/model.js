@@ -146,7 +146,7 @@ export default class SchematicModel {
         __resolveType: resolveTypeMethod,
       });
     }
-    if (Object.keys(ownResolvers).length > 0) fullResolvers[this.name] = ownResolvers; // if we have resolvers for this objet, add it to the fullResolvers object
+    if (Object.keys(ownResolvers).length > 0) fullResolvers[this.getTypeName()] = ownResolvers; // if we have resolvers for this objet, add it to the fullResolvers object
 
     // add all resolvers from dependencies
     const deps = this.dependencies || [];
